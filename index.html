@@ -58,20 +58,35 @@
           />
         </div>
 
-        <!-- Фильтр по треку -->
-        <div class="w-full sm:w-56">
-          <label for="track-select" class="sr-only">Фильтр по треку</label>
-          <div class="relative">
-            <select
-              id="track-select"
-              class="block w-full appearance-none rounded-xl border border-slate-200 bg-white/80 px-3 py-2 pr-8 text-sm shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300 sm:text-base"
-            >
-              <option value="all">Все треки</option>
-              <!-- Остальные опции будут добавлены из JS -->
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
-              ▾
+        <!-- Правый блок: трек + избранное -->
+        <div class="flex w-full gap-2 sm:w-auto sm:min-w-[20rem] sm:justify-end">
+          <!-- Фильтр по треку -->
+          <div class="w-1/2 sm:w-40">
+            <label for="track-select" class="sr-only">Фильтр по треку</label>
+            <div class="relative">
+              <select
+                id="track-select"
+                class="block w-full appearance-none rounded-xl border border-slate-200 bg-white/80 px-3 py-2 pr-8 text-sm shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300 sm:text-base"
+              >
+                <option value="all">Все треки</option>
+                <!-- Остальные опции будут добавлены из JS -->
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                ▾
+              </div>
             </div>
+          </div>
+
+          <!-- Кнопка избранного -->
+          <div class="w-1/2 sm:w-48">
+            <button
+              id="favorites-toggle"
+              type="button"
+              class="inline-flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>⭐</span>
+              <span>Показать избранное</span>
+            </button>
           </div>
         </div>
       </div>
@@ -104,69 +119,82 @@
   </div>
 
   <script>
-    // Данные о докладах
+    const FAVORITES_KEY = "conference_favorites";
+
+    // Данные о докладах (добавили id для устойчивой работы избранного)
     const talks = [
       {
+        id: 1,
         time: "09:30–10:00",
         title: "Регистрация и приветственный кофе",
         speaker: "Оргкомитет",
         track: "Общее"
       },
       {
+        id: 2,
         time: "10:00–10:40",
         title: "Как не утонуть в монорепозитории",
         speaker: "Анна Петрова",
         track: "Frontend"
       },
       {
+        id: 3,
         time: "10:00–10:40",
         title: "Архитектура микросервисов без боли",
         speaker: "Иван Смирнов",
         track: "Backend"
       },
       {
+        id: 4,
         time: "10:50–11:30",
         title: "Оптимизация React-приложений: кейсы из продакшена",
         speaker: "Дмитрий Ковалёв",
         track: "Frontend"
       },
       {
+        id: 5,
         time: "10:50–11:30",
         title: "PostgreSQL под высокой нагрузкой",
         speaker: "Мария Сергеева",
         track: "Backend"
       },
       {
+        id: 6,
         time: "11:40–12:20",
         title: "От аналитики к продукту: как подружить Data и бизнес",
         speaker: "Екатерина Орлова",
         track: "Data"
       },
       {
+        id: 7,
         time: "12:20–13:20",
         title: "Обеденный перерыв",
         speaker: "",
         track: "Общее"
       },
       {
+        id: 8,
         time: "13:20–14:00",
         title: "Design systems для живых проектов",
         speaker: "Николай Жуков",
         track: "Frontend"
       },
       {
+        id: 9,
         time: "13:20–14:00",
         title: "gRPC vs REST: как выбрать подход",
         speaker: "Олег Князев",
         track: "Backend"
       },
       {
+        id: 10,
         time: "14:10–14:50",
         title: "Фичефлаги и прогрессивный rollout",
         speaker: "Полина Лебедева",
         track: "Infra"
       },
       {
+        id: 11,
         time: "15:00–15:40",
         title: "Панельная дискуссия: будущее веб-разработки",
         speaker: "Все спикеры",
@@ -183,11 +211,33 @@
       "Общее": "bg-slate-100 text-slate-800 ring-slate-200"
     };
 
+    function loadFavorites() {
+      try {
+        const raw = localStorage.getItem(FAVORITES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return new Set(parsed);
+      } catch (e) {
+        return new Set();
+      }
+    }
+
+    function saveFavorites(favorites) {
+      try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
+      } catch (e) {
+        // игнорируем ошибки localStorage
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       const container = document.getElementById("talks-container");
       const searchInput = document.getElementById("search-input");
       const trackSelect = document.getElementById("track-select");
       const emptyState = document.getElementById("empty-state");
+      const favoritesToggle = document.getElementById("favorites-toggle");
+
+      const favorites = loadFavorites();
+      let favoritesOnly = false;
 
       // Заполняем select треками из данных
       const uniqueTracks = Array.from(
@@ -201,15 +251,45 @@
         trackSelect.appendChild(option);
       });
 
-      // Создание карточки (логика сохранена)
+      function updateFavoritesToggleAppearance() {
+        const isActive = favoritesOnly;
+        favoritesToggle.classList.toggle("bg-slate-900", isActive);
+        favoritesToggle.classList.toggle("text-slate-50", isActive);
+        favoritesToggle.classList.toggle("border-slate-900", isActive);
+        favoritesToggle.classList.toggle("hover:bg-slate-50", !isActive);
+        favoritesToggle.classList.toggle("hover:bg-slate-900/90", isActive);
+      }
+
+      function updateStarAppearance(button, isFavorite) {
+        button.classList.toggle("text-yellow-400", isFavorite);
+        button.classList.toggle("text-slate-300", !isFavorite);
+        button.setAttribute(
+          "aria-pressed",
+          isFavorite ? "true" : "false"
+        );
+        button.title = isFavorite
+          ? "Убрать из избранного"
+          : "Добавить в избранное";
+      }
+
+      function toggleFavorite(id) {
+        if (favorites.has(id)) {
+          favorites.delete(id);
+        } else {
+          favorites.add(id);
+        }
+        saveFavorites(favorites);
+      }
+
+      // Создание карточки (логика прежняя + иконка избранного)
       function createTalkCard(talk) {
         const card = document.createElement("article");
         card.className =
           "flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:p-5 shadow-sm backdrop-blur transition hover:-translate-y-[1px] hover:shadow-md";
 
-        // Время
-        const timeBadge = document.createElement("div");
-        timeBadge.className =
+        // Верхняя строка: время + звезда
+        const timeRow = document.createElement("div");
+        timeRow.className =
           "flex items-center gap-2 text-xs font-medium text-slate-700 sm:text-sm";
 
         const timePill = document.createElement("span");
@@ -217,8 +297,28 @@
           "inline-flex items-center rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-50";
         timePill.textContent = talk.time;
 
-        timeBadge.appendChild(timePill);
-        card.appendChild(timeBadge);
+        const starBtn = document.createElement("button");
+        starBtn.type = "button";
+        starBtn.className =
+          "ml-auto text-lg leading-none transition transform hover:scale-110 focus:outline-none";
+        starBtn.textContent = "⭐";
+        const isFavorite = favorites.has(talk.id);
+        updateStarAppearance(starBtn, isFavorite);
+
+        starBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleFavorite(talk.id);
+          const nowFavorite = favorites.has(talk.id);
+          updateStarAppearance(starBtn, nowFavorite);
+          // если включен фильтр избранного — обновим список
+          if (favoritesOnly) {
+            applyFilters();
+          }
+        });
+
+        timeRow.appendChild(timePill);
+        timeRow.appendChild(starBtn);
+        card.appendChild(timeRow);
 
         // Заголовок
         const titleEl = document.createElement("h2");
@@ -270,7 +370,7 @@
         });
       }
 
-      // Применение фильтров
+      // Применение фильтров (поиск + трек + избранное)
       function applyFilters() {
         const query = searchInput.value.trim().toLowerCase();
         const selectedTrack = trackSelect.value;
@@ -283,13 +383,15 @@
             (talk.title || "") +
             " " +
             (talk.speaker || "")
-          )
-            .toLowerCase();
+          ).toLowerCase();
 
           const matchesQuery =
             query === "" || haystack.includes(query);
 
-          return matchesTrack && matchesQuery;
+          const matchesFavorite =
+            !favoritesOnly || favorites.has(talk.id);
+
+          return matchesTrack && matchesQuery && matchesFavorite;
         });
 
         renderTalks(filtered);
@@ -299,8 +401,15 @@
       searchInput.addEventListener("input", applyFilters);
       trackSelect.addEventListener("change", applyFilters);
 
+      favoritesToggle.addEventListener("click", () => {
+        favoritesOnly = !favoritesOnly;
+        updateFavoritesToggleAppearance();
+        applyFilters();
+      });
+
       // Первый рендер
-      renderTalks(talks);
+      updateFavoritesToggleAppearance();
+      applyFilters();
     });
   </script>
 </body>
