@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Программа конференции</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Небольшая настройка Tailwind: системный шрифт
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900">
+  <div class="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <header class="mb-6 sm:mb-8">
+      <div class="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Программа конференции
+          </h1>
+          <p class="mt-1 text-sm text-slate-600 sm:text-base">
+            Суббота, 14 февраля · Потоки Frontend · Backend · Data
+          </p>
+        </div>
+        <span class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-50">
+          Z Hall · 2025
+        </span>
+      </div>
+
+      <p class="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
+        Все доклады идут параллельно по трекам. Время указано по местному времени площадки.
+        Расписание может незначительно меняться.
+      </p>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1">
+      <section aria-label="Список докладов">
+        <div
+          id="talks-container"
+          class="grid gap-4 sm:gap-5 md:grid-cols-2"
+        >
+          <!-- Карточки докладов будут вставлены сюда из JS -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-500 sm:text-sm">
+      Последнее обновление программы — прямо перед началом конференции.
+    </footer>
+  </div>
+
+  <script>
+    // Данные о докладах
+    const talks = [
+      {
+        time: "09:30–10:00",
+        title: "Регистрация и приветственный кофе",
+        speaker: "Оргкомитет",
+        track: "Общее"
+      },
+      {
+        time: "10:00–10:40",
+        title: "Как не утонуть в монорепозитории",
+        speaker: "Анна Петрова",
+        track: "Frontend"
+      },
+      {
+        time: "10:00–10:40",
+        title: "Архитектура микросервисов без боли",
+        speaker: "Иван Смирнов",
+        track: "Backend"
+      },
+      {
+        time: "10:50–11:30",
+        title: "Оптимизация React-приложений: кейсы из продакшена",
+        speaker: "Дмитрий Ковалёв",
+        track: "Frontend"
+      },
+      {
+        time: "10:50–11:30",
+        title: "PostgreSQL под высокой нагрузкой",
+        speaker: "Мария Сергеева",
+        track: "Backend"
+      },
+      {
+        time: "11:40–12:20",
+        title: "От аналитики к продукту: как подружить Data и бизнес",
+        speaker: "Екатерина Орлова",
+        track: "Data"
+      },
+      {
+        time: "12:20–13:20",
+        title: "Обеденный перерыв",
+        speaker: "",
+        track: "Общее"
+      },
+      {
+        time: "13:20–14:00",
+        title: "Design systems для живых проектов",
+        speaker: "Николай Жуков",
+        track: "Frontend"
+      },
+      {
+        time: "13:20–14:00",
+        title: "gRPC vs REST: как выбрать подход",
+        speaker: "Олег Князев",
+        track: "Backend"
+      },
+      {
+        time: "14:10–14:50",
+        title: "Фичефлаги и прогрессивный rollout",
+        speaker: "Полина Лебедева",
+        track: "Infra"
+      },
+      {
+        time: "15:00–15:40",
+        title: "Панельная дискуссия: будущее веб-разработки",
+        speaker: "Все спикеры",
+        track: "Общее"
+      }
+    ];
+
+    // Цветовые стили для треков
+    const trackStyles = {
+      "Frontend": "bg-sky-100 text-sky-800 ring-sky-200",
+      "Backend": "bg-emerald-100 text-emerald-800 ring-emerald-200",
+      "Data": "bg-violet-100 text-violet-800 ring-violet-200",
+      "Infra": "bg-amber-100 text-amber-800 ring-amber-200",
+      "Общее": "bg-slate-100 text-slate-800 ring-slate-200"
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById("talks-container");
+
+      talks.forEach((talk) => {
+        const card = document.createElement("article");
+        card.className =
+          "flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:p-5 shadow-sm backdrop-blur transition hover:-translate-y-[1px] hover:shadow-md";
+
+        // Время
+        const timeBadge = document.createElement("div");
+        timeBadge.className = "flex items-center gap-2 text-xs font-medium text-slate-700 sm:text-sm";
+
+        const timePill = document.createElement("span");
+        timePill.className =
+          "inline-flex items-center rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-50";
+        timePill.textContent = talk.time;
+
+        timeBadge.appendChild(timePill);
+        card.appendChild(timeBadge);
+
+        // Заголовок
+        const titleEl = document.createElement("h2");
+        titleEl.className = "text-base font-semibold leading-snug text-slate-900 sm:text-lg";
+        titleEl.textContent = talk.title;
+        card.appendChild(titleEl);
+
+        // Спикер (если есть)
+        if (talk.speaker && talk.speaker.trim() !== "") {
+          const speakerEl = document.createElement("p");
+          speakerEl.className = "text-sm font-medium text-slate-800";
+          speakerEl.textContent = talk.speaker;
+          card.appendChild(speakerEl);
+        }
+
+        // Низ карточки: трек
+        const footer = document.createElement("div");
+        footer.className = "mt-1 flex items-center justify-between gap-3";
+
+        const track = talk.track || "Общее";
+        const trackClass =
+          trackStyles[track] || "bg-slate-100 text-slate-800 ring-slate-200";
+
+        const trackPill = document.createElement("span");
+        trackPill.className =
+          "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset " +
+          trackClass;
+        trackPill.textContent = track;
+
+        footer.appendChild(trackPill);
+        card.appendChild(footer);
+
+        container.appendChild(card);
+      });
+    });
+  </script>
+</body>
+</html>
