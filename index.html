@@ -44,6 +44,39 @@
       </p>
     </header>
 
+    <!-- Фильтры -->
+    <section class="mb-5 sm:mb-6" aria-label="Фильтрация докладов">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <!-- Поиск -->
+        <div class="relative flex-1">
+          <label for="search-input" class="sr-only">Поиск по докладам</label>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="🔍 Поиск доклада..."
+            class="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm shadow-sm outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-300 sm:text-base"
+          />
+        </div>
+
+        <!-- Фильтр по треку -->
+        <div class="w-full sm:w-56">
+          <label for="track-select" class="sr-only">Фильтр по треку</label>
+          <div class="relative">
+            <select
+              id="track-select"
+              class="block w-full appearance-none rounded-xl border border-slate-200 bg-white/80 px-3 py-2 pr-8 text-sm shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300 sm:text-base"
+            >
+              <option value="all">Все треки</option>
+              <!-- Остальные опции будут добавлены из JS -->
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+              ▾
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Content -->
     <main class="flex-1">
       <section aria-label="Список докладов">
@@ -53,6 +86,14 @@
         >
           <!-- Карточки докладов будут вставлены сюда из JS -->
         </div>
+
+        <!-- Сообщение, если ничего не найдено -->
+        <p
+          id="empty-state"
+          class="mt-6 hidden text-sm text-slate-500 sm:text-base"
+        >
+          Ничего не найдено. Попробуйте изменить запрос или выбрать другой трек.
+        </p>
       </section>
     </main>
 
@@ -144,15 +185,32 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       const container = document.getElementById("talks-container");
+      const searchInput = document.getElementById("search-input");
+      const trackSelect = document.getElementById("track-select");
+      const emptyState = document.getElementById("empty-state");
 
-      talks.forEach((talk) => {
+      // Заполняем select треками из данных
+      const uniqueTracks = Array.from(
+        new Set(talks.map((t) => t.track).filter(Boolean))
+      ).sort();
+
+      uniqueTracks.forEach((track) => {
+        const option = document.createElement("option");
+        option.value = track;
+        option.textContent = track;
+        trackSelect.appendChild(option);
+      });
+
+      // Создание карточки (логика сохранена)
+      function createTalkCard(talk) {
         const card = document.createElement("article");
         card.className =
           "flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:p-5 shadow-sm backdrop-blur transition hover:-translate-y-[1px] hover:shadow-md";
 
         // Время
         const timeBadge = document.createElement("div");
-        timeBadge.className = "flex items-center gap-2 text-xs font-medium text-slate-700 sm:text-sm";
+        timeBadge.className =
+          "flex items-center gap-2 text-xs font-medium text-slate-700 sm:text-sm";
 
         const timePill = document.createElement("span");
         timePill.className =
@@ -164,7 +222,8 @@
 
         // Заголовок
         const titleEl = document.createElement("h2");
-        titleEl.className = "text-base font-semibold leading-snug text-slate-900 sm:text-lg";
+        titleEl.className =
+          "text-base font-semibold leading-snug text-slate-900 sm:text-lg";
         titleEl.textContent = talk.title;
         card.appendChild(titleEl);
 
@@ -193,8 +252,55 @@
         footer.appendChild(trackPill);
         card.appendChild(footer);
 
-        container.appendChild(card);
-      });
+        return card;
+      }
+
+      // Рендер списка докладов
+      function renderTalks(list) {
+        container.innerHTML = "";
+        if (!list.length) {
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        emptyState.classList.add("hidden");
+
+        list.forEach((talk) => {
+          const card = createTalkCard(talk);
+          container.appendChild(card);
+        });
+      }
+
+      // Применение фильтров
+      function applyFilters() {
+        const query = searchInput.value.trim().toLowerCase();
+        const selectedTrack = trackSelect.value;
+
+        const filtered = talks.filter((talk) => {
+          const matchesTrack =
+            selectedTrack === "all" || talk.track === selectedTrack;
+
+          const haystack = (
+            (talk.title || "") +
+            " " +
+            (talk.speaker || "")
+          )
+            .toLowerCase();
+
+          const matchesQuery =
+            query === "" || haystack.includes(query);
+
+          return matchesTrack && matchesQuery;
+        });
+
+        renderTalks(filtered);
+      }
+
+      // Слушатели событий
+      searchInput.addEventListener("input", applyFilters);
+      trackSelect.addEventListener("change", applyFilters);
+
+      // Первый рендер
+      renderTalks(talks);
     });
   </script>
 </body>
